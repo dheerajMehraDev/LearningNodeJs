@@ -1,29 +1,40 @@
-
-
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-const PORT = process.env.PORT;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-const server = http.createServer((req,res) => {
+const PORT = process.env.PORT || 8002; // Fallback to 8002 if env variable is undefined
+
+const server = http.createServer((req, res) => {
   try {
-    if(req.method == 'GET'){
-      if(req.url == '/'){
-        res.setHeader('content-type' , 'text/html');
-        res.end('<h1> this is plain html </h1>')
-      } else if(req.url == '/about'){
-        res.setHeader('content-type' , 'text/html');
-        res.end('<h1> this is plain html for about </h1>')
-      } else {
-        res.setHeader('content-type' , 'text/plain');
-        res.end('this is plan text for all the requests');
+    if (req.method === 'GET') {
+      let filepath = path.join(__dirname, 'public', 'index.html'); // default
+
+      if (req.url === '/about') {
+        filepath = path.join(__dirname, 'public', 'about.html');
+      } else if (req.url === '/contact') {
+        filepath = path.join(__dirname, 'public', 'contact.html');
       }
-    } else {
-      res.end('go to get request');
+
+      fs.readFile(filepath, (err, data) => {
+        if (err) {
+          res.writeHead(404, { 'Content-Type': 'text/html' });
+          res.end('<h1>Error: Page not found</h1>');
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(data);
+        }
+      });
     }
   } catch (error) {
-    throw new Error("can not access");
+    console.error("Server Error:", error);
+    res.writeHead(500, { 'Content-Type': 'text/html' });
+    res.end('<h1>Internal Server Error</h1>');
   }
 });
-
 
 server.listen(PORT, () => console.log(`Listening on port ${PORT}`));
